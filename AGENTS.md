@@ -26,6 +26,8 @@
 - `analysis.json` 是模型中间结果；`output/需求分析结果.md` 是质量门禁通过后的正式结果。
 - 质量判定以本地校验程序为准，不以模型自检结论为准。
 - 待补充测试点不得进入后续测试用例生成流程。
+- 实际测试用例执行由人工完成；本项目不自动执行测试用例。
+- 测试用例 JSON 校验失败时，读取 `test_case_generation/reports/validation.json`，修复 `test_case_generation/test_cases.json` 后重新校验。
 
 ## 文件职责
 
