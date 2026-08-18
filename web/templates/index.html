@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>需求分析助手</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='extra.css') }}">
 </head>
 <body>
   <main class="shell">
-    <header class="topbar"><div class="brand-mark">QA</div><div><p class="eyebrow">QUALITY ASSURANCE WORKSPACE</p><h1>需求分析助手</h1></div><span class="local-badge">本地质量门禁</span></header>
+    <header class="topbar"><div class="brand-mark">QA</div><div><p class="eyebrow">QUALITY ASSURANCE WORKSPACE</p><h1>需求分析助手</h1></div><span class="local-badge">本地质量门禁</span><button id="account-btn" class="ghost-btn" type="button">账号设置</button><form method="post" action="/logout" class="logout-form"><button class="ghost-btn" type="submit">退出</button></form></header>
     <section class="hero"><p class="eyebrow">从需求到可执行用例</p><h2>上传文档，后台完成分析与校验。</h2><p>正常流程不会打扰你。只有需要补充需求或人工修复时，系统才会暂停并提醒。</p></section>
     <section class="panel upload-panel">
       <div class="panel-title"><span class="step">01</span><div><h3>提交需求文档</h3><p>支持 Markdown、TXT、DOCX、PDF</p></div></div>
@@ -16,6 +17,18 @@
     </section>
     <section id="job-panel" class="panel job-panel hidden"><div class="panel-title"><span class="step">02</span><div><h3 id="job-title">任务处理中</h3><p id="job-message">正在连接分析执行器</p></div><span id="status-dot" class="status-dot"></span></div><div class="progress"><i id="progress-bar"></i></div><div class="stages"><span data-stage="analyzing">需求分析</span><span data-stage="generating">测试用例</span><span data-stage="completed">结果就绪</span></div><div id="human-box" class="human-box hidden"></div><div id="downloads" class="downloads hidden"><a data-artifact="analysis">需求分析结果.md</a><a data-artifact="analysis-json">validated/analysis.json</a><a data-artifact="test-cases">test_cases.json</a></div></section>
   </main>
+  <div id="account-modal" class="modal hidden">
+    <div class="modal-card panel">
+      <div class="panel-title"><span class="step">SET</span><div><h3>账号设置</h3><p>修改登录账号或密码</p></div><button id="account-close" class="ghost-btn" type="button">×</button></div>
+      <form id="account-form" class="account-form">
+        <label>用户名<input id="account-username" name="username" autocomplete="username" required></label>
+        <label>当前密码<input name="current_password" type="password" autocomplete="current-password" required></label>
+        <label>新密码（留空则不修改）<input name="new_password" type="password" autocomplete="new-password"></label>
+        <button type="submit" class="primary login-submit">保存 <span>→</span></button>
+      </form>
+      <p id="account-msg" class="account-msg"></p>
+    </div>
+  </div>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

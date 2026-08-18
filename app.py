@@ -1,29 +1,131 @@
 from __future__ import annotations
 
+import argparse
+import getpass
 import json
 import os
+import secrets
 import threading
 import uuid
+from functools import wraps
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, redirect, render_template, request, send_file, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 ROOT = Path(__file__).resolve().parent
 OPENCODE_URL = os.getenv("OPENCODE_URL", "http://127.0.0.1:4096").rstrip("/")
+AUTH_FILE = ROOT / "auth.json"
+DEFAULT_USERNAME = "admin"
+DEFAULT_PASSWORD = "admin123"
+
 app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
 
+def ensure_auth() -> None:
+    if AUTH_FILE.is_file():
+        return
+    AUTH_FILE.write_text(
+        json.dumps(
+            {
+                "username": DEFAULT_USERNAME,
+                "password_hash": generate_password_hash(DEFAULT_PASSWORD),
+                "secret_key": secrets.token_hex(32),
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    print(f"[!] 首次运行已创建默认账号 {DEFAULT_USERNAME}/{DEFAULT_PASSWORD}")
+    print("[!] 请立即通过页面右上角“账号设置”或 `python app.py set-password` 修改")
+
+
+def load_auth() -> dict:
+    ensure_auth()
+    return json.loads(AUTH_FILE.read_text(encoding="utf-8"))
+
+
+def save_auth(data: dict) -> None:
+    AUTH_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+ensure_auth()
+app.secret_key = load_auth()["secret_key"]
+
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("user"):
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "未登录"}), 401
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+@app.get("/login")
+def login():
+    return render_template("login.html")
+
+
+@app.post("/login")
+def login_submit():
+    auth = load_auth()
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
+    if username == auth["username"] and check_password_hash(auth["password_hash"], password):
+        session["user"] = username
+        return redirect(url_for("index"))
+    return render_template("login.html", error="账号或密码错误"), 401
+
+
+@app.post("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
 @app.get("/")
+@login_required
 def index():
     return render_template("index.html")
 
 
+@app.get("/api/account")
+@login_required
+def account():
+    return jsonify({"username": session["user"]})
+
+
+@app.post("/api/account")
+@login_required
+def account_update():
+    body = request.get_json(silent=True) or {}
+    auth = load_auth()
+    if not check_password_hash(auth["password_hash"], body.get("current_password", "")):
+        return jsonify({"error": "当前密码错误"}), 400
+    username = body.get("username", "").strip()
+    if not username:
+        return jsonify({"error": "用户名不能为空"}), 400
+    new_password = body.get("new_password", "")
+    auth["username"] = username
+    if new_password:
+        auth["password_hash"] = generate_password_hash(new_password)
+    save_auth(auth)
+    session["user"] = username
+    return jsonify({"ok": True, "username": username})
+
+
 @app.post("/api/jobs")
+@login_required
 def create_job():
     uploaded = request.files.get("requirement")
     if not uploaded or not uploaded.filename:
@@ -49,6 +151,7 @@ def create_job():
 
 
 @app.get("/api/jobs/<job_id>")
+@login_required
 def get_job(job_id: str):
     if job_id not in jobs:
         return jsonify({"error": "任务不存在"}), 404
@@ -56,6 +159,7 @@ def get_job(job_id: str):
 
 
 @app.get("/api/jobs/<job_id>/download/<artifact>")
+@login_required
 def download(job_id: str, artifact: str):
     if job_id not in jobs:
         return jsonify({"error": "任务不存在"}), 404
@@ -120,5 +224,34 @@ def update_job(job_id: str, **values: str) -> None:
         jobs[job_id].update(values)
 
 
-if __name__ == "__main__":
+def cli_set_password() -> int:
+    ensure_auth()
+    auth = load_auth()
+    username = input(f"用户名 [{auth['username']}]: ").strip() or auth["username"]
+    password = getpass.getpass("新密码: ")
+    confirm = getpass.getpass("确认密码: ")
+    if not username or not password:
+        print("用户名和密码不能为空")
+        return 1
+    if password != confirm:
+        print("两次输入不一致")
+        return 1
+    auth["username"] = username
+    auth["password_hash"] = generate_password_hash(password)
+    save_auth(auth)
+    print("登录账号已更新")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="需求分析助手 Web 服务")
+    parser.add_argument("command", nargs="?", help="set-password: 修改登录账号密码")
+    args = parser.parse_args()
+    if args.command == "set-password":
+        return cli_set_password()
     app.run(host=os.getenv("WEB_HOST", "127.0.0.1"), port=int(os.getenv("WEB_PORT", "8080")))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

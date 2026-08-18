@@ -17,7 +17,27 @@ pip install -r requirements.txt
 python app.py
 ```
 
-浏览器访问 `http://127.0.0.1:8080`。
+浏览器访问 `http://127.0.0.1:8080`，输入登录账号后使用。
+
+## 登录账号
+
+首次运行会自动创建默认账号：
+
+```text
+用户名：admin
+密码：admin123
+```
+
+请立即修改：
+
+- 页面右上角「账号设置」入口（需要当前密码）
+- 或命令行修改（在项目目录）：
+
+```bash
+python app.py set-password
+```
+
+账号密码保存在项目根目录 `auth.json`（已加入 `.gitignore`，不会提交到仓库）。忘记密码时，在服务器上执行 `python app.py set-password` 即可重置。
 
 如果 Web 服务和 OpenCode Server 不在同一台机器，可设置：
 
@@ -57,4 +77,4 @@ sudo systemctl enable --now requirement-assistant-web
 sudo systemctl status requirement-assistant-web
 ```
 
-当前 MVP 使用项目目录中的共享输出文件，适合先验证流程。正式部署多用户并发前，需要将每个任务隔离到独立工作区，并为 Web 服务增加登录、文件大小限制和任务权限控制。
+当前 MVP 使用项目目录中的共享输出文件，适合先验证流程。正式部署多用户并发前，需要将每个任务隔离到独立工作区，并补充文件大小限制和任务权限控制。页面已有登录保护，但建议配合 HTTPS 和 UFW 来源限制一起使用，避免口令明文传输。

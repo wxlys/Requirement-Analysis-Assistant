@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登录 - 需求分析助手</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='extra.css') }}">
+</head>
+<body>
+  <main class="shell login-shell">
+    <header class="topbar">
+      <div class="brand-mark">QA</div>
+      <div><p class="eyebrow">QUALITY ASSURANCE WORKSPACE</p><h1>需求分析助手</h1></div>
+      <span class="local-badge">本地质量门禁</span>
+    </header>
+    <section class="panel login-panel">
+      <div class="panel-title"><span class="step">AUTH</span><div><h3>登录</h3><p>请输入账号密码后继续</p></div></div>
+      <form method="post" action="/login" class="login-form">
+        {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+        <label>用户名<input name="username" autocomplete="username" required autofocus></label>
+        <label>密码<input name="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit" class="primary login-submit">登录 <span>→</span></button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

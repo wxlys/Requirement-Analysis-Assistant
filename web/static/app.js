@@ -2,12 +2,24 @@ const form = document.querySelector('#upload-form');
 const input = document.querySelector('#requirement');
 const name = document.querySelector('#file-name');
 const panel = document.querySelector('#job-panel');
+const accountBtn = document.querySelector('#account-btn');
+const accountModal = document.querySelector('#account-modal');
+const accountClose = document.querySelector('#account-close');
+const accountForm = document.querySelector('#account-form');
+const accountUsername = document.querySelector('#account-username');
+const accountMsg = document.querySelector('#account-msg');
 let timer;
+
+function guard(response) {
+  if (response.status === 401) { location.href = '/login'; return true; }
+  return false;
+}
 
 input.addEventListener('change', () => { name.textContent = input.files[0]?.name || '选择或拖入需求文档'; });
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const response = await fetch('/api/jobs', { method: 'POST', body: new FormData(form) });
+  if (guard(response)) return;
   const data = await response.json();
   if (!response.ok) return alert(data.error || '提交失败');
   panel.classList.remove('hidden');
@@ -17,6 +29,7 @@ form.addEventListener('submit', async (event) => {
 async function poll(id) {
   clearTimeout(timer);
   const response = await fetch(`/api/jobs/${id}`);
+  if (guard(response)) return;
   const job = await response.json();
   render(job);
   if (!['completed', 'human_required', 'failed'].includes(job.status)) timer = setTimeout(() => poll(id), 1500);
@@ -35,3 +48,26 @@ function render(job) {
     downloads.querySelectorAll('a').forEach(link => { link.href = `/api/jobs/${job.id}/download/${link.dataset.artifact}`; });
   }
 }
+
+accountBtn?.addEventListener('click', async () => {
+  const response = await fetch('/api/account');
+  if (guard(response)) return;
+  const data = await response.json();
+  accountUsername.value = data.username;
+  accountMsg.textContent = '';
+  accountModal.classList.remove('hidden');
+});
+accountClose?.addEventListener('click', () => accountModal.classList.add('hidden'));
+accountModal?.addEventListener('click', (event) => { if (event.target === accountModal) accountModal.classList.add('hidden'); });
+accountForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const payload = Object.fromEntries(new FormData(accountForm));
+  const response = await fetch('/api/account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  if (guard(response)) return;
+  const data = await response.json();
+  if (!response.ok) { accountMsg.textContent = data.error || '保存失败'; return; }
+  accountMsg.textContent = '已保存';
+  accountForm.reset();
+  accountUsername.value = data.username;
+  setTimeout(() => { accountModal.classList.add('hidden'); accountMsg.textContent = ''; }, 900);
+});
