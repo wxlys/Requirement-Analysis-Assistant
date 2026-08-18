@@ -19,7 +19,6 @@ python app.py
 
 浏览器访问 `http://127.0.0.1:8080`，输入登录账号后使用。
 
-
 如果 Web 服务和 OpenCode Server 不在同一台机器，可设置：
 
 ```bash
