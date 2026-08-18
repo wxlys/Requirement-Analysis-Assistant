@@ -19,25 +19,6 @@ python app.py
 
 浏览器访问 `http://127.0.0.1:8080`，输入登录账号后使用。
 
-## 登录账号
-
-首次运行会自动创建默认账号：
-
-```text
-用户名：admin
-密码：admin123
-```
-
-请立即修改：
-
-- 页面右上角「账号设置」入口（需要当前密码）
-- 或命令行修改（在项目目录）：
-
-```bash
-python app.py set-password
-```
-
-账号密码保存在项目根目录 `auth.json`（已加入 `.gitignore`，不会提交到仓库）。忘记密码时，在服务器上执行 `python app.py set-password` 即可重置。
 
 如果 Web 服务和 OpenCode Server 不在同一台机器，可设置：
 
