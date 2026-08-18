@@ -15,6 +15,8 @@ from urllib.request import Request, urlopen
 from flask import Flask, jsonify, redirect, render_template, request, send_file, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from test_case_generation.render_test_cases import render as render_test_cases
+
 
 ROOT = Path(__file__).resolve().parent
 OPENCODE_URL = os.getenv("OPENCODE_URL", "http://127.0.0.1:4096").rstrip("/")
@@ -167,6 +169,7 @@ def download(job_id: str, artifact: str):
         "analysis": ROOT / "output" / "需求分析结果.md",
         "analysis-json": ROOT / "output" / "validated" / "analysis.json",
         "test-cases": ROOT / "test_case_generation" / "test_cases.json",
+        "test-cases-md": ROOT / "test_case_generation" / "test_cases.md",
     }
     path = files.get(artifact)
     if path is None or not path.is_file():
@@ -199,6 +202,7 @@ def run_job(job_id: str) -> None:
         if not case_report.get("passed"):
             update_job(job_id, status="human_required", message="测试用例校验未通过，需要人工处理")
             return
+        render_test_case_markdown()
         update_job(job_id, status="completed", message="处理完成，可下载结果")
     except Exception as exc:  # The UI gets a safe message; details remain server-side.
         app.logger.exception("job %s failed", job_id)
@@ -217,6 +221,14 @@ def opencode(method: str, path: str, body: dict | None = None) -> dict:
 
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+def render_test_case_markdown() -> None:
+    cases_path = ROOT / "test_case_generation" / "test_cases.json"
+    output_path = ROOT / "test_case_generation" / "test_cases.md"
+    if cases_path.is_file():
+        document = json.loads(cases_path.read_text(encoding="utf-8"))
+        output_path.write_text(render_test_cases(document), encoding="utf-8")
 
 
 def update_job(job_id: str, **values: str) -> None:
