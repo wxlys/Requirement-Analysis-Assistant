@@ -36,4 +36,3 @@
 - `analysis_quality_gate/`：结构校验、业务校验和 Markdown 渲染。
 - `output/reports/validation.json`：质量门禁报告。
 - `output/需求分析结果.md`：通过质量门禁后的正式结果。
-- `用户登录需求文档.md`：需求文档示例。

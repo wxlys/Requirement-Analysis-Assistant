@@ -3,3 +3,11 @@ __pycache__/
 .venv/
 venv/
 auth.json
+
+# 运行时生成产物（由 pipeline / Web 服务生成，不入库）
+analysis.json
+output/
+需求文档-*
+test_case_generation/test_cases.json
+test_case_generation/test_cases.md
+test_case_generation/reports/
