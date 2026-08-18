@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>需求分析助手</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar"><div class="brand-mark">QA</div><div><p class="eyebrow">QUALITY ASSURANCE WORKSPACE</p><h1>需求分析助手</h1></div><span class="local-badge">本地质量门禁</span></header>
+    <section class="hero"><p class="eyebrow">从需求到可执行用例</p><h2>上传文档，后台完成分析与校验。</h2><p>正常流程不会打扰你。只有需要补充需求或人工修复时，系统才会暂停并提醒。</p></section>
+    <section class="panel upload-panel">
+      <div class="panel-title"><span class="step">01</span><div><h3>提交需求文档</h3><p>支持 Markdown、TXT、DOCX、PDF</p></div></div>
+      <form id="upload-form"><label class="dropzone" id="dropzone"><input id="requirement" name="requirement" type="file" accept=".md,.txt,.docx,.pdf" required><span class="upload-icon">↑</span><strong id="file-name">选择或拖入需求文档</strong><small>文件只会用于当前项目任务</small></label><button type="submit" class="primary">开始分析 <span>→</span></button></form>
+    </section>
+    <section id="job-panel" class="panel job-panel hidden"><div class="panel-title"><span class="step">02</span><div><h3 id="job-title">任务处理中</h3><p id="job-message">正在连接分析执行器</p></div><span id="status-dot" class="status-dot"></span></div><div class="progress"><i id="progress-bar"></i></div><div class="stages"><span data-stage="analyzing">需求分析</span><span data-stage="generating">测试用例</span><span data-stage="completed">结果就绪</span></div><div id="human-box" class="human-box hidden"></div><div id="downloads" class="downloads hidden"><a data-artifact="analysis">需求分析结果.md</a><a data-artifact="analysis-json">validated/analysis.json</a><a data-artifact="test-cases">test_cases.json</a></div></section>
+  </main>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
