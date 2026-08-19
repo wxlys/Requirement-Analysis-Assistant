@@ -85,7 +85,7 @@ export XDG_DATA_HOME=/data/opencode-data               # opencode 凭据（/conn
 
 首次启动后，若 opencode 尚未配置模型，请执行 `opencode` 后用 `/connect` 粘贴 key 并选择模型，凭据会写入 `$XDG_DATA_HOME/opencode/auth.json`。
 
-每个任务在独立工作区 `workspaces/{任务ID}/` 中执行，输入、中间产物、输出均按任务隔离，互不影响，支持多用户并发。任务状态（`jobs`）为内存态，服务重启后清空；磁盘上的产物文件仍保留在工作区内。
+每个任务在独立工作区 `workspaces/{任务ID}/` 中执行，输入、中间产物、输出均按任务隔离，互不影响，支持多用户并发。任务状态（`jobs`）持久化在 `DATA_DIR/jobs.json`，服务重启后历史任务仍可在页面下方「历史任务」列表中查看并重新下载 4 个产物；启动时自动扫描 `workspaces/` 回填历史任务。
 
 ## 数据迁移与容器重建手册
 
