@@ -6,7 +6,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-# 数据目录：默认项目根目录；容器部署时请设为持久卷路径，例如 export DATA_DIR=/data
+# 优先加载项目根目录的 .env（若存在），否则使用默认值
+if [ -f "$ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/.env"
+  set +a
+fi
+
+# 数据目录：默认项目根目录；容器部署时请在 .env 中设为持久卷路径，例如 DATA_DIR=/data
 export DATA_DIR="${DATA_DIR:-$ROOT}"
 export OPENCODE_URL="${OPENCODE_URL:-http://127.0.0.1:4096}"
 export WEB_HOST="${WEB_HOST:-0.0.0.0}"
