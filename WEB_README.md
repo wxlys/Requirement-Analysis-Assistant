@@ -60,16 +60,29 @@ sudo systemctl status requirement-assistant-web
 
 `DATA_DIR` 指向持久化目录，存放 `auth.json` 与 `workspaces/`（任务工作区），请确保该目录在系统盘之外或已做好备份。
 
-## Docker 部署
+## 容器内直接部署（当前服务器实际方式）
 
-仓库提供单容器方案（OpenCode Server + Flask Web），容器内 OpenCode 仅监听 `127.0.0.1:4096`，不对外暴露。
+当前服务器是一个 Docker 容器，服务直接在容器内运行，**不需要再套一层 Docker**。仓库提供 `start.sh` / `stop.sh` 脚本：
 
 ```bash
-docker compose up -d --build
+cd /home/acs/opt/Requirement-Analysis-Assistant
+./start.sh        # 后台启动 opencode serve(4096) + python app.py(8080)
+./stop.sh         # 停止
 ```
 
-- 数据持久化：卷 `app-data` 挂载到容器内 `/data`，`DATA_DIR=/data`，`auth.json` 与所有任务工作区 `workspaces/` 均持久化，容器重建不丢失
-- 默认账号 `admin/admin123`，首次登录后请立即修改
-- OpenCode 模型/provider 配置（如 provider `opencode-go`、模型 `deepseek-v4-flash`）通过容器内 `~/.config/opencode/opencode.json` 或环境变量注入，请按你的实际配置补充
+日志输出到 `$DATA_DIR/logs/`（`opencode.log`、`web.log`）。
+
+### 持久化（重要）
+
+容器根文件系统是临时层，**容器重建会丢失全部数据**。必须让宿主机把持久卷挂载进容器（例如挂到 `/data`），然后启动前设置：
+
+```bash
+export DATA_DIR=/data                                  # auth.json + workspaces/
+export XDG_CONFIG_HOME=/data/opencode-config            # opencode 配置/模型选择
+export XDG_DATA_HOME=/data/opencode-data               # opencode 凭据（/connect 粘贴的 key）
+./start.sh
+```
+
+首次启动后，若 opencode 尚未配置模型，请执行 `opencode` 后用 `/connect` 粘贴 key 并选择模型，凭据会写入 `$XDG_DATA_HOME/opencode/auth.json`。
 
 每个任务在独立工作区 `workspaces/{任务ID}/` 中执行，输入、中间产物、输出均按任务隔离，互不影响，支持多用户并发。任务状态（`jobs`）为内存态，服务重启后清空；磁盘上的产物文件仍保留在工作区内。

@@ -24,21 +24,23 @@
 
 ## 快速开始
 
-### 1. 启动 OpenCode Server
-
-在项目根目录运行：
+### 1. 一键启动（推荐）
 
 ```bash
-opencode serve --hostname 127.0.0.1 --port 4096
+./start.sh        # 后台启动 opencode serve + Flask Web，日志在 $DATA_DIR/logs/
+./stop.sh         # 停止服务
 ```
 
-### 2. 安装依赖并启动 Web 服务
+### 2. 手动启动
+
+在项目根目录：
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python app.py
+opencode serve --hostname 127.0.0.1 --port 4096   # 终端 1
+python app.py                                        # 终端 2
 ```
 
 浏览器访问 `http://127.0.0.1:8080`。
@@ -53,10 +55,12 @@ python app.py set-password
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
+| `DATA_DIR` | 项目根目录 | 持久化目录：存放 `auth.json` 与 `workspaces/`（任务工作区）。容器部署时请指向宿主机挂载的持久卷 |
+| `XDG_CONFIG_HOME` | `~/.config` | opencode 配置目录（`/connect` 选择的模型等） |
+| `XDG_DATA_HOME` | `~/.local/share` | opencode 数据目录（`/connect` 粘贴的 key 存在 `<该目录>/opencode/auth.json`） |
 | `WEB_HOST` | `127.0.0.1` | Web 服务监听地址 |
 | `WEB_PORT` | `8080` | Web 服务端口 |
 | `OPENCODE_URL` | `http://127.0.0.1:4096` | OpenCode Server 地址 |
-| `DATA_DIR` | 项目根目录 | 持久化目录：存放 `auth.json` 与 `workspaces/`（任务工作区），Docker 部署时挂载卷到此处 |
 
 ## 使用流程
 
@@ -91,16 +95,17 @@ test_case_generation/                 # 测试用例生成提示词、校验与�
 web/                                  # 前端页面与静态资源
 workspaces/{任务ID}/                  # 每个任务的独立工作区（运行时生成，不入库）
 requirements.txt                      # 依赖清单
-Dockerfile / docker-compose.yml       # Docker 单容器部署（OpenCode + Web，卷持久化）
+start.sh / stop.sh                    # 启动/停止脚本（容器内直接运行）
+.env.example                          # 环境变量示例（DATA_DIR / opencode 目录等）
 WEB_README.md                         # Web 部署与运维说明
 ```
 
 ## 说明与注意事项
 
 - 每个任务在独立工作区 `workspaces/{任务ID}/` 中执行，输入、中间产物、输出均按任务隔离，互不影响，支持多用户并发
-- 上传的需求文档保存在对应任务工作区内；`auth.json`、`workspaces/` 均位于 `DATA_DIR`，请通过卷挂载持久化
+- 上传的需求文档保存在对应任务工作区内；`auth.json`、`workspaces/` 均位于 `DATA_DIR`，请将 `DATA_DIR` 指向持久化目录（容器部署时挂载卷），否则容器重建会丢失数据
+- opencode 的 `/connect` 凭据与模型选择存放在 `XDG_DATA_HOME/opencode/` 与 `XDG_CONFIG_HOME/opencode/`，同样建议落在持久卷上
 - 任务状态（`jobs`）为内存态，服务重启后清空；磁盘上的产物文件仍在工作区内，可通过下载链接追溯
 - `analysis.json`、`output/`、`test_cases.json` 等均为运行时生成产物，不入版本库
 - 生产部署建议配合 HTTPS（Nginx）与 UFW 限制，OpenCode Server 不直接暴露公网
-- Docker 部署（单容器：OpenCode Server + Flask Web）见 `Dockerfile` / `docker-compose.yml`
 - 详细部署（systemd、Nginx、环境变量）见 [WEB_README.md](WEB_README.md)

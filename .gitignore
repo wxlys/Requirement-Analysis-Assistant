@@ -3,6 +3,8 @@ __pycache__/
 .venv/
 venv/
 auth.json
+.env
+logs/
 
 # 运行时生成产物（由 pipeline / Web 服务生成，不入库）
 analysis.json
