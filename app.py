@@ -85,7 +85,41 @@ def save_jobs() -> None:
     JOBS_FILE.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def backfill_jobs() -> None:
+    DATA_WORKSPACES.mkdir(parents=True, exist_ok=True)
+    changed = False
+    for ws_dir in DATA_WORKSPACES.iterdir():
+        if not ws_dir.is_dir():
+            continue
+        job_id = ws_dir.name
+        if job_id in jobs:
+            continue
+        docs = list(ws_dir.glob("需求文档-*"))
+        if (ws_dir / "test_case_generation" / "test_cases.json").is_file():
+            status = "completed"
+        elif (ws_dir / "output" / "reports" / "validation.json").is_file():
+            status = "human_required"
+        else:
+            status = "unknown"
+        try:
+            now = datetime.fromtimestamp(ws_dir.stat().st_mtime).isoformat(timespec="seconds")
+        except Exception:
+            now = datetime.now().isoformat(timespec="seconds")
+        jobs[job_id] = {
+            "id": job_id,
+            "filename": docs[0].name if docs else "",
+            "status": status,
+            "message": "历史任务（服务升级前创建）",
+            "created_at": now,
+            "updated_at": now,
+        }
+        changed = True
+    if changed:
+        save_jobs()
+
+
 load_jobs()
+backfill_jobs()
 
 
 def login_required(view):
