@@ -3,21 +3,21 @@ description: 按本项目固定流程生成、校验并修复需求分析测试�
 agent: build
 ---
 
-按项目根目录 `AGENTS.md` 中的固定流程执行需求分析。用户指定的需求文档为：`$ARGUMENTS`。
+按项目根目录 `AGENTS.md` 中的固定流程执行需求分析。`$ARGUMENTS` 格式为：`<需求文档文件名> <任务ID>`，需求文档位于工作目录 `workspaces/<任务ID>/` 下，下文用 `{workspace}` 表示该工作目录（即 `workspaces/<任务ID>`）。
 
 必须遵守：
 
-1. 读取需求文档和冻结的 `prompt.md`。
-2. 生成严格 JSON，保存到 `analysis.json`。
+1. 读取 `{workspace}/` 下的需求文档，以及项目根目录冻结的 `prompt.md`。
+2. 生成严格 JSON，保存到 `{workspace}/analysis.json`。
 3. 执行：
 
    ```powershell
-   python -m analysis_quality_gate.pipeline process analysis.json --output-dir output
+   python -m analysis_quality_gate.pipeline process {workspace}/analysis.json --output-dir {workspace}/output
    ```
 
-4. 读取 `output/reports/validation.json`。
-5. `passed=false` 时，只根据错误报告修复 `analysis.json`，不得修改 `prompt.md`，然后重新执行质量门禁。
+4. 读取 `{workspace}/output/reports/validation.json`。
+5. `passed=false` 时，只根据错误报告修复 `{workspace}/analysis.json`，不得修改 `prompt.md`，然后重新执行质量门禁。
 6. 最多修复 2 次；仍失败时停止并报告错误。
-7. `passed=true` 后，报告正式结果路径 `output/需求分析结果.md`。
+7. `passed=true` 后，报告正式结果路径 `{workspace}/output/需求分析结果.md`。
 
 不要调用远程 API，不要读取或使用 `.env`，不要绕过本地质量门禁。

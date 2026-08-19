@@ -1,0 +1,18 @@
+services:
+  requirement-assistant:
+    build: .
+    container_name: requirement-assistant
+    ports:
+      - "8080:8080"
+    volumes:
+      # 持久化 auth.json 与任务工作区 workspaces/（容器内 /data）
+      - app-data:/data
+    environment:
+      - DATA_DIR=/data
+      - WEB_HOST=0.0.0.0
+      - WEB_PORT=8080
+      - OPENCODE_URL=http://127.0.0.1:4096
+    restart: unless-stopped
+
+volumes:
+  app-data:

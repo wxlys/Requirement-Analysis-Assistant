@@ -42,6 +42,7 @@ WorkingDirectory=/opt/requirement-assistant/Requirement-Analysis-Assistant
 Environment=OPENCODE_URL=http://127.0.0.1:4096
 Environment=WEB_HOST=127.0.0.1
 Environment=WEB_PORT=8080
+Environment=DATA_DIR=/opt/requirement-assistant/data
 ExecStart=/opt/requirement-assistant/Requirement-Analysis-Assistant/.venv/bin/python app.py
 Restart=always
 
@@ -57,4 +58,18 @@ sudo systemctl enable --now requirement-assistant-web
 sudo systemctl status requirement-assistant-web
 ```
 
-当前 MVP 使用项目目录中的共享输出文件，适合先验证流程。正式部署多用户并发前，需要将每个任务隔离到独立工作区，并补充文件大小限制和任务权限控制。页面已有登录保护，但建议配合 HTTPS 和 UFW 来源限制一起使用，避免口令明文传输。
+`DATA_DIR` 指向持久化目录，存放 `auth.json` 与 `workspaces/`（任务工作区），请确保该目录在系统盘之外或已做好备份。
+
+## Docker 部署
+
+仓库提供单容器方案（OpenCode Server + Flask Web），容器内 OpenCode 仅监听 `127.0.0.1:4096`，不对外暴露。
+
+```bash
+docker compose up -d --build
+```
+
+- 数据持久化：卷 `app-data` 挂载到容器内 `/data`，`DATA_DIR=/data`，`auth.json` 与所有任务工作区 `workspaces/` 均持久化，容器重建不丢失
+- 默认账号 `admin/admin123`，首次登录后请立即修改
+- OpenCode 模型/provider 配置（如 provider `opencode-go`、模型 `deepseek-v4-flash`）通过容器内 `~/.config/opencode/opencode.json` 或环境变量注入，请按你的实际配置补充
+
+每个任务在独立工作区 `workspaces/{任务ID}/` 中执行，输入、中间产物、输出均按任务隔离，互不影响，支持多用户并发。任务状态（`jobs`）为内存态，服务重启后清空；磁盘上的产物文件仍保留在工作区内。

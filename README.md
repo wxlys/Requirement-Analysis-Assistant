@@ -56,6 +56,7 @@ python app.py set-password
 | `WEB_HOST` | `127.0.0.1` | Web 服务监听地址 |
 | `WEB_PORT` | `8080` | Web 服务端口 |
 | `OPENCODE_URL` | `http://127.0.0.1:4096` | OpenCode Server 地址 |
+| `DATA_DIR` | 项目根目录 | 持久化目录：存放 `auth.json` 与 `workspaces/`（任务工作区），Docker 部署时挂载卷到此处 |
 
 ## 使用流程
 
@@ -88,14 +89,18 @@ analysis_quality_gate/                # 结构校验、业务校验、Markdown �
 test_case_generation/                 # 测试用例生成提示词、校验与渲染
 .opencode/commands/                   # OpenCode 会话命令
 web/                                  # 前端页面与静态资源
+workspaces/{任务ID}/                  # 每个任务的独立工作区（运行时生成，不入库）
 requirements.txt                      # 依赖清单
+Dockerfile / docker-compose.yml       # Docker 单容器部署（OpenCode + Web，卷持久化）
 WEB_README.md                         # Web 部署与运维说明
 ```
 
 ## 说明与注意事项
 
-- `output/`、`analysis.json`、`test_cases.json` 等均为运行时生成产物，不入版本库
-- 上传的需求文档保存为项目根目录 `需求文档-{任务ID}.后缀`
-- 当前 MVP 使用项目目录中的共享输出文件，适合单任务/单用户验证；多用户并发需将任务隔离到独立工作区
+- 每个任务在独立工作区 `workspaces/{任务ID}/` 中执行，输入、中间产物、输出均按任务隔离，互不影响，支持多用户并发
+- 上传的需求文档保存在对应任务工作区内；`auth.json`、`workspaces/` 均位于 `DATA_DIR`，请通过卷挂载持久化
+- 任务状态（`jobs`）为内存态，服务重启后清空；磁盘上的产物文件仍在工作区内，可通过下载链接追溯
+- `analysis.json`、`output/`、`test_cases.json` 等均为运行时生成产物，不入版本库
 - 生产部署建议配合 HTTPS（Nginx）与 UFW 限制，OpenCode Server 不直接暴露公网
+- Docker 部署（单容器：OpenCode Server + Flask Web）见 `Dockerfile` / `docker-compose.yml`
 - 详细部署（systemd、Nginx、环境变量）见 [WEB_README.md](WEB_README.md)

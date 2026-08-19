@@ -19,8 +19,10 @@ from test_case_generation.render_test_cases import render as render_test_cases
 
 
 ROOT = Path(__file__).resolve().parent
+DATA_DIR = Path(os.getenv("DATA_DIR", str(ROOT)))
 OPENCODE_URL = os.getenv("OPENCODE_URL", "http://127.0.0.1:4096").rstrip("/")
-AUTH_FILE = ROOT / "auth.json"
+AUTH_FILE = DATA_DIR / "auth.json"
+WORKSPACES_DIR = DATA_DIR / "workspaces"
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin123"
 
@@ -139,8 +141,9 @@ def create_job():
 
     job_id = uuid.uuid4().hex[:12]
     filename = f"需求文档-{job_id}{suffix}"
-    destination = ROOT / filename
-    uploaded.save(destination)
+    workspace = WORKSPACES_DIR / job_id
+    workspace.mkdir(parents=True, exist_ok=True)
+    uploaded.save(workspace / filename)
     with jobs_lock:
         jobs[job_id] = {
             "id": job_id,
@@ -165,11 +168,12 @@ def get_job(job_id: str):
 def download(job_id: str, artifact: str):
     if job_id not in jobs:
         return jsonify({"error": "任务不存在"}), 404
+    workspace = WORKSPACES_DIR / job_id
     files = {
-        "analysis": ROOT / "output" / "需求分析结果.md",
-        "analysis-json": ROOT / "output" / "validated" / "analysis.json",
-        "test-cases": ROOT / "test_case_generation" / "test_cases.json",
-        "test-cases-md": ROOT / "test_case_generation" / "test_cases.md",
+        "analysis": workspace / "output" / "需求分析结果.md",
+        "analysis-json": workspace / "output" / "validated" / "analysis.json",
+        "test-cases": workspace / "test_case_generation" / "test_cases.json",
+        "test-cases-md": workspace / "test_case_generation" / "test_cases.md",
     }
     path = files.get(artifact)
     if path is None or not path.is_file():
@@ -186,23 +190,24 @@ def public_job(job_id: str) -> dict:
 
 def run_job(job_id: str) -> None:
     update_job(job_id, status="analyzing", message="正在进行需求分析")
+    workspace = WORKSPACES_DIR / job_id
     try:
         session = opencode("POST", "/session", {"title": f"需求分析任务 {job_id}"})
         session_id = session["id"]
         filename = jobs[job_id]["filename"]
-        send_message(session_id, f"/analyze-requirement {filename}")
-        report = read_json(ROOT / "output" / "reports" / "validation.json")
+        send_message(session_id, f"/analyze-requirement {filename} {job_id}")
+        report = read_json(workspace / "output" / "reports" / "validation.json")
         if not report.get("passed"):
             update_job(job_id, status="human_required", message="需求分析未通过，需要人工修复 analysis.json")
             return
 
         update_job(job_id, status="generating", message="正在生成并校验测试用例")
-        send_message(session_id, "/generate-test-cases")
-        case_report = read_json(ROOT / "test_case_generation" / "reports" / "validation.json")
+        send_message(session_id, f"/generate-test-cases {job_id}")
+        case_report = read_json(workspace / "test_case_generation" / "reports" / "validation.json")
         if not case_report.get("passed"):
             update_job(job_id, status="human_required", message="测试用例校验未通过，需要人工处理")
             return
-        render_test_case_markdown()
+        render_test_case_markdown(workspace)
         update_job(job_id, status="completed", message="处理完成，可下载结果")
     except Exception as exc:  # The UI gets a safe message; details remain server-side.
         app.logger.exception("job %s failed", job_id)
@@ -223,9 +228,9 @@ def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
 
 
-def render_test_case_markdown() -> None:
-    cases_path = ROOT / "test_case_generation" / "test_cases.json"
-    output_path = ROOT / "test_case_generation" / "test_cases.md"
+def render_test_case_markdown(workspace: Path) -> None:
+    cases_path = workspace / "test_case_generation" / "test_cases.json"
+    output_path = workspace / "test_case_generation" / "test_cases.md"
     if cases_path.is_file():
         document = json.loads(cases_path.read_text(encoding="utf-8"))
         output_path.write_text(render_test_cases(document), encoding="utf-8")
