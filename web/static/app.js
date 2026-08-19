@@ -28,22 +28,37 @@ form.addEventListener('submit', async (event) => {
 
 async function poll(id) {
   clearTimeout(timer);
-  const response = await fetch(`/api/jobs/${id}`);
-  if (guard(response)) return;
-  const job = await response.json();
-  render(job);
-  if (!['completed', 'human_required', 'failed'].includes(job.status)) timer = setTimeout(() => poll(id), 1500);
+  try {
+    const response = await fetch(`/api/jobs/${id}`);
+    if (guard(response)) return;
+    const job = await response.json();
+    render(job);
+    if (!['completed', 'human_required', 'failed'].includes(job.status)) timer = setTimeout(() => poll(id), 1500);
+  } catch (e) {
+    // 网络错误（如服务重启瞬间）时重试，避免轮询永久停止
+    timer = setTimeout(() => poll(id), 3000);
+  }
 }
 
 function render(job) {
-  document.querySelector('#job-title').textContent = ({analyzing:'正在分析需求',generating:'正在生成测试用例',completed:'任务已完成',human_required:'需要人工介入',failed:'任务执行失败'})[job.status] || '任务排队中';
+  const status = job.status;
+  const stages = document.querySelectorAll('.stages span[data-stage]');
+  document.querySelector('#job-title').textContent = ({analyzing:'正在分析需求',generating:'正在生成测试用例',completed:'任务已完成',human_required:'需要人工介入',failed:'任务执行失败'})[status] || '任务排队中';
   document.querySelector('#job-message').textContent = job.message;
-  document.querySelector('#status-dot').className = `status-dot ${job.status}`;
-  document.querySelector('#progress-bar').style.width = ({queued:'8%',analyzing:'38%',generating:'72%',completed:'100%',human_required:'100%',failed:'100%'})[job.status] || '8%';
-  if (job.status === 'human_required' || job.status === 'failed') {
+  document.querySelector('#status-dot').className = `status-dot ${status}`;
+  const widths = {queued:'8%',analyzing:'38%',generating:'72%',completed:'100%',human_required:'100%',failed:'100%'};
+  const bar = document.querySelector('#progress-bar');
+  bar.style.width = widths[status] || '8%';
+  const activeIndex = {analyzing:0, generating:1, completed:2}[status] ?? -1;
+  stages.forEach((el, i) => {
+    el.classList.toggle('done', activeIndex >= i);
+    el.classList.toggle('active', i === activeIndex);
+    if (status === 'failed' || status === 'human_required') el.classList.toggle('failed', i >= activeIndex);
+  });
+  if (status === 'human_required' || status === 'failed') {
     const box = document.querySelector('#human-box'); box.classList.remove('hidden'); box.textContent = job.message;
   }
-  if (job.status === 'completed') {
+  if (status === 'completed') {
     const downloads = document.querySelector('#downloads'); downloads.classList.remove('hidden');
     downloads.querySelectorAll('a').forEach(link => { link.href = `/api/jobs/${job.id}/download/${link.dataset.artifact}`; });
   }
