@@ -223,7 +223,8 @@ def create_job():
 @login_required
 def list_jobs():
     with jobs_lock:
-        items = [public_job(jid) for jid in jobs]
+        job_ids = list(jobs)
+    items = [public_job(jid) for jid in job_ids]
     items.sort(key=lambda item: item.get("created_at") or "", reverse=True)
     return jsonify({"jobs": items})
 
