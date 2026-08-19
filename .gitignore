@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 venv/
 auth.json
+jobs.json
 .env
 logs/
 
@@ -13,4 +14,4 @@ output/
 test_case_generation/test_cases.json
 test_case_generation/test_cases.md
 test_case_generation/reports/
-workspaces/
+workspaces
