@@ -22,7 +22,10 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.getenv("DATA_DIR", str(ROOT))).resolve()
 OPENCODE_URL = os.getenv("OPENCODE_URL", "http://127.0.0.1:4096").rstrip("/")
 AUTH_FILE = DATA_DIR / "auth.json"
-WORKSPACES_DIR = DATA_DIR / "workspaces"
+DATA_WORKSPACES = DATA_DIR / "workspaces"
+# 工作区入口在项目根目录（软链接到 DATA_DIR/workspaces），
+# 使 opencode 的 read 工具路径落在 git 仓库内，避免对仓库外路径挂起
+WORKSPACES_DIR = ROOT / "workspaces"
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin123"
 
@@ -139,6 +142,7 @@ def create_job():
     if suffix not in {".md", ".txt", ".docx", ".pdf"}:
         return jsonify({"error": "仅支持 Markdown、TXT、DOCX 或 PDF 文件"}), 400
 
+    ensure_workspaces()
     job_id = uuid.uuid4().hex[:12]
     filename = f"需求文档-{job_id}{suffix}"
     workspace = WORKSPACES_DIR / job_id
@@ -186,6 +190,18 @@ def public_job(job_id: str) -> dict:
         job = dict(jobs[job_id])
     job.pop("filename", None)
     return job
+
+
+def ensure_workspaces() -> None:
+    DATA_WORKSPACES.mkdir(parents=True, exist_ok=True)
+    if WORKSPACES_DIR.is_symlink() or WORKSPACES_DIR.exists():
+        if WORKSPACES_DIR.is_symlink():
+            return
+        for child in list(WORKSPACES_DIR.iterdir()):
+            (DATA_WORKSPACES / child.name).mkdir(parents=True, exist_ok=True)
+            child.rename(DATA_WORKSPACES / child.name)
+        WORKSPACES_DIR.rmdir()
+    WORKSPACES_DIR.symlink_to(DATA_WORKSPACES, target_is_directory=True)
 
 
 def run_job(job_id: str) -> None:

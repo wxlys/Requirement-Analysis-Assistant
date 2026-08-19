@@ -31,6 +31,7 @@
 - 实际测试用例执行由人工完成；本项目不自动执行测试用例。
 - 测试用例 JSON 校验失败时，读取 `{workspace}/test_case_generation/reports/validation.json`，修复 `{workspace}/test_case_generation/test_cases.json` 后重新校验。
 - 只读写 `{workspace}/` 内的中间产物，不读写其它任务工作目录，不向项目根目录写入 `analysis.json`、`output/` 等中间产物。
+- 读取文件请使用 bash 的 `cat` 命令，不要使用 opencode 的 read 工具（read 工具对项目目录外的路径（如 `/data` 卷）可能挂起）。
 
 ## 文件职责
 
