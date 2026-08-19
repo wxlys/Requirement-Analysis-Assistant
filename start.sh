@@ -29,12 +29,25 @@ mkdir -p "$XDG_DATA_HOME/opencode"
 PYTHON="$ROOT/.venv/bin/python"
 [ -x "$PYTHON" ] || PYTHON=python3
 
+# 定位 opencode 可执行文件（非交互 shell 的 PATH 可能不含 ~/.opencode/bin）
+if command -v opencode >/dev/null 2>&1; then
+  OPENCODE_BIN=opencode
+elif [ -x "$HOME/.opencode/bin/opencode" ]; then
+  OPENCODE_BIN="$HOME/.opencode/bin/opencode"
+elif [ -x /usr/local/bin/opencode ]; then
+  OPENCODE_BIN=/usr/local/bin/opencode
+else
+  echo "未找到 opencode 可执行文件，请安装或设置 PATH" >&2
+  exit 1
+fi
+
 echo "DATA_DIR=$DATA_DIR"
 echo "XDG_DATA_HOME=$XDG_DATA_HOME"
 echo "OPENCODE_URL=$OPENCODE_URL"
+echo "OPENCODE_BIN=$OPENCODE_BIN"
 
 # OpenCode Server（仅监听 127.0.0.1，不对外暴露）
-nohup opencode serve --hostname 127.0.0.1 --port 4096 >"$DATA_DIR/logs/opencode.log" 2>&1 &
+nohup "$OPENCODE_BIN" serve --hostname 127.0.0.1 --port 4096 >"$DATA_DIR/logs/opencode.log" 2>&1 &
 echo $! > "$DATA_DIR/logs/opencode.pid"
 
 # Flask Web 服务
