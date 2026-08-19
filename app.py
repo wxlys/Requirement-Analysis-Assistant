@@ -7,6 +7,7 @@ import os
 import secrets
 import threading
 import uuid
+from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -22,6 +23,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.getenv("DATA_DIR", str(ROOT))).resolve()
 OPENCODE_URL = os.getenv("OPENCODE_URL", "http://127.0.0.1:4096").rstrip("/")
 AUTH_FILE = DATA_DIR / "auth.json"
+JOBS_FILE = DATA_DIR / "jobs.json"
 DATA_WORKSPACES = DATA_DIR / "workspaces"
 # 工作区入口在项目根目录（软链接到 DATA_DIR/workspaces），
 # 使 opencode 的 read 工具路径落在 git 仓库内，避免对仓库外路径挂起
@@ -64,6 +66,26 @@ def save_auth(data: dict) -> None:
 
 ensure_auth()
 app.secret_key = load_auth()["secret_key"]
+
+
+def load_jobs() -> None:
+    global jobs
+    if JOBS_FILE.is_file():
+        try:
+            jobs = json.loads(JOBS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            app.logger.exception("load jobs failed")
+            jobs = {}
+
+
+def save_jobs() -> None:
+    JOBS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with jobs_lock:
+        snapshot = {jid: dict(job) for jid, job in jobs.items()}
+    JOBS_FILE.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+load_jobs()
 
 
 def login_required(view):
@@ -148,15 +170,28 @@ def create_job():
     workspace = WORKSPACES_DIR / job_id
     workspace.mkdir(parents=True, exist_ok=True)
     uploaded.save(workspace / filename)
+    now = datetime.now().isoformat(timespec="seconds")
     with jobs_lock:
         jobs[job_id] = {
             "id": job_id,
             "filename": filename,
             "status": "queued",
             "message": "任务已提交",
+            "created_at": now,
+            "updated_at": now,
         }
+    save_jobs()
     threading.Thread(target=run_job, args=(job_id,), daemon=True).start()
     return jsonify(public_job(job_id)), 202
+
+
+@app.get("/api/jobs")
+@login_required
+def list_jobs():
+    with jobs_lock:
+        items = [public_job(jid) for jid in jobs]
+    items.sort(key=lambda item: item.get("created_at") or "", reverse=True)
+    return jsonify({"jobs": items})
 
 
 @app.get("/api/jobs/<job_id>")
@@ -277,6 +312,8 @@ def render_test_case_markdown(workspace: Path) -> None:
 def update_job(job_id: str, **values: str) -> None:
     with jobs_lock:
         jobs[job_id].update(values)
+        jobs[job_id]["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    save_jobs()
 
 
 def cli_set_password() -> int:

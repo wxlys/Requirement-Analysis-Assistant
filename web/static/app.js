@@ -86,3 +86,30 @@ accountForm?.addEventListener('submit', async (event) => {
   accountUsername.value = data.username;
   setTimeout(() => { accountModal.classList.add('hidden'); accountMsg.textContent = ''; }, 900);
 });
+
+const statusText = {queued:'排队中',analyzing:'分析中',generating:'生成用例中',completed:'已完成',human_required:'需人工介入',failed:'失败'};
+
+async function loadHistory() {
+  const response = await fetch('/api/jobs');
+  if (guard(response)) return;
+  const data = await response.json();
+  const list = document.querySelector('#history-list');
+  const jobs = data.jobs || [];
+  if (!jobs.length) { list.innerHTML = '<p class="history-empty">暂无历史任务</p>'; return; }
+  list.innerHTML = jobs.map(job => {
+    const ok = job.status === 'completed';
+    const downloads = ok ? [
+      `<a class="dl-link" href="/api/jobs/${job.id}/download/analysis">需求分析结果.md</a>`,
+      `<a class="dl-link" href="/api/jobs/${job.id}/download/analysis-json">analysis.json</a>`,
+      `<a class="dl-link" href="/api/jobs/${job.id}/download/test-cases-md">test_cases.md</a>`,
+      `<a class="dl-link" href="/api/jobs/${job.id}/download/test-cases">test_cases.json</a>`,
+    ].join('') : '<span class="dl-none">无产物</span>';
+    return `<div class="history-row ${job.status}">
+      <div class="history-main"><span class="history-id">${job.id}</span><span class="history-status ${job.status}">${statusText[job.status] || job.status}</span><span class="history-time">${job.updated_at || ''}</span><span class="history-msg">${job.message || ''}</span></div>
+      <div class="history-downloads">${downloads}</div>
+    </div>`;
+  }).join('');
+}
+
+document.querySelector('#refresh-history').addEventListener('click', loadHistory);
+loadHistory();

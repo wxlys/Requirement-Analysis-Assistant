@@ -11,3 +11,21 @@
 .stages span.active::before{content:'';display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:50%;background:var(--orange);vertical-align:1px}
 .stages span.done::before{content:'✓';display:inline-block;margin-right:6px;font-size:11px;vertical-align:1px}
 .stages span.failed::before{content:'✕';display:inline-block;margin-right:6px;font-size:11px;vertical-align:1px}
+
+/* 历史任务列表 */
+.history-panel{margin-top:22px;padding:28px}
+.history-list{margin-top:18px;display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto}
+.history-empty{color:var(--muted);font-size:13px;margin:0;padding:6px 0}
+.history-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #e3e1da;border-radius:12px;background:#faf9f6}
+.history-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.history-id{font-family:ui-monospace,monospace;font-size:11px;color:#8a9298}
+.history-status{padding:3px 9px;border-radius:99px;font-size:11px;background:#e8e7e2;color:#6a7378}
+.history-status.completed{background:#e9f4ee;color:#28734e}
+.history-status.failed{background:#fdecea;color:#b3473a}
+.history-status.human_required{background:#fff1eb;color:#89462e}
+.history-time{font-size:11px;color:#9aa2a3;margin-left:auto}
+.history-msg{font-size:12px;color:#5d6a72}
+.history-downloads{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.dl-link{padding:6px 10px;border-radius:8px;background:#e9f4ee;color:#28734e;font-size:11px;text-decoration:none;white-space:nowrap}
+.dl-link:hover{background:#d9ecdf}
+.dl-none{font-size:11px;color:#a8b0b3}
