@@ -3,7 +3,7 @@ description: 按本项目固定流程生成、校验并修复需求分析测试�
 agent: build
 ---
 
-按项目根目录 `AGENTS.md` 中的固定流程执行需求分析。`$ARGUMENTS` 格式为：`<需求文档文件名> <任务ID>`，需求文档位于工作目录 `workspaces/<任务ID>/` 下，下文用 `{workspace}` 表示该工作目录（即 `workspaces/<任务ID>`）。
+按项目根目录 `AGENTS.md` 中的固定流程执行需求分析。`$ARGUMENTS` 格式为：`<需求文档文件名> <工作目录绝对路径>`，需求文档位于该工作目录下，该绝对路径即 `{workspace}`。
 
 必须遵守：
 

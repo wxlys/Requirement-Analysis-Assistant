@@ -19,7 +19,7 @@ from test_case_generation.render_test_cases import render as render_test_cases
 
 
 ROOT = Path(__file__).resolve().parent
-DATA_DIR = Path(os.getenv("DATA_DIR", str(ROOT)))
+DATA_DIR = Path(os.getenv("DATA_DIR", str(ROOT))).resolve()
 OPENCODE_URL = os.getenv("OPENCODE_URL", "http://127.0.0.1:4096").rstrip("/")
 AUTH_FILE = DATA_DIR / "auth.json"
 WORKSPACES_DIR = DATA_DIR / "workspaces"
@@ -195,14 +195,14 @@ def run_job(job_id: str) -> None:
         session = opencode("POST", "/session", {"title": f"需求分析任务 {job_id}"})
         session_id = session["id"]
         filename = jobs[job_id]["filename"]
-        send_message(session_id, f"/analyze-requirement {filename} {job_id}")
+        send_message(session_id, f"/analyze-requirement {filename} {workspace}")
         report = read_json(workspace / "output" / "reports" / "validation.json")
         if not report.get("passed"):
             update_job(job_id, status="human_required", message="需求分析未通过，需要人工修复 analysis.json")
             return
 
         update_job(job_id, status="generating", message="正在生成并校验测试用例")
-        send_message(session_id, f"/generate-test-cases {job_id}")
+        send_message(session_id, f"/generate-test-cases {workspace}")
         case_report = read_json(workspace / "test_case_generation" / "reports" / "validation.json")
         if not case_report.get("passed"):
             update_job(job_id, status="human_required", message="测试用例校验未通过，需要人工处理")
@@ -218,9 +218,31 @@ def send_message(session_id: str, text: str) -> dict:
     return opencode("POST", f"/session/{session_id}/message", {"parts": [{"type": "text", "text": text}]})
 
 
+def opencode_auth_key() -> str | None:
+    candidates = [os.getenv("XDG_DATA_HOME"), str(Path.home() / ".local" / "share")]
+    for base in candidates:
+        if not base:
+            continue
+        auth_file = Path(base) / "opencode" / "auth.json"
+        if not auth_file.is_file():
+            continue
+        try:
+            data = json.loads(auth_file.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for entry in data.values():
+            if isinstance(entry, dict) and entry.get("key"):
+                return str(entry["key"])
+    return None
+
+
 def opencode(method: str, path: str, body: dict | None = None) -> dict:
+    headers = {"Content-Type": "application/json"}
+    key = opencode_auth_key()
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
     data = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None
-    response = urlopen(Request(f"{OPENCODE_URL}{path}", data=data, method=method, headers={"Content-Type": "application/json"}), timeout=1800)
+    response = urlopen(Request(f"{OPENCODE_URL}{path}", data=data, method=method, headers=headers), timeout=1800)
     return json.loads(response.read().decode("utf-8"))
 
 

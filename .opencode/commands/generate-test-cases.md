@@ -3,7 +3,7 @@ description: 根据通过质量门禁的测试点生成并校验测试用例
 agent: build
 ---
 
-按项目根目录 `AGENTS.md` 执行测试用例生成流程。`$ARGUMENTS` 为任务ID，对应工作目录 `workspaces/<任务ID>`（下文用 `{workspace}` 表示）。
+按项目根目录 `AGENTS.md` 执行测试用例生成流程。`$ARGUMENTS` 为工作目录绝对路径（即 `{workspace}`，如 `/data/workspaces/<任务ID>`）。
 
 1. 读取 `{workspace}/output/validated/analysis.json`。
 2. 只使用状态为“可直接生成用例”的测试点。
