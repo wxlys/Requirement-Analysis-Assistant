@@ -35,12 +35,21 @@ DEFAULT_PASSWORD = "admin123"
 app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
-STATIC_VERSION = str(int(time.time()))
 
 
 @app.context_processor
 def inject_static_version():
-    return {"static_version": STATIC_VERSION}
+    return {"static_version": static_version()}
+
+
+def static_version() -> str:
+    """按静态资源实际修改时间生成版本号：文件变了版本号才变，浏览器据此决定是否刷新缓存。"""
+    try:
+        files = list(Path(app.static_folder).rglob("*.js")) + list(Path(app.static_folder).rglob("*.css"))
+        mtimes = [int(f.stat().st_mtime) for f in files if f.is_file()]
+        return str(max(mtimes)) if mtimes else "1"
+    except Exception:
+        return "1"
 
 
 def ensure_auth() -> None:
@@ -92,6 +101,21 @@ def save_jobs() -> None:
     JOBS_FILE.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def doc_display_name(ws_dir: Path) -> str:
+    docs = sorted(ws_dir.glob("需求文档-*"))
+    if not docs:
+        return ""
+    doc = docs[0]
+    if doc.suffix.lower() == ".md":
+        try:
+            for line in doc.read_text(encoding="utf-8").splitlines():
+                if line.startswith("#"):
+                    return line.lstrip("#").strip() or doc.name
+        except Exception:
+            pass
+    return doc.name
+
+
 def backfill_jobs() -> None:
     DATA_WORKSPACES.mkdir(parents=True, exist_ok=True)
     changed = False
@@ -100,9 +124,12 @@ def backfill_jobs() -> None:
             continue
         job_id = ws_dir.name
         if job_id in jobs:
+            if not jobs[job_id].get("original_name"):
+                jobs[job_id]["original_name"] = doc_display_name(ws_dir)
+                jobs[job_id]["message"] = "历史任务（服务升级前创建）"
+                changed = True
             continue
-        docs = list(ws_dir.glob("需求文档-*"))
-        original_name = docs[0].name if docs else ""
+        original_name = doc_display_name(ws_dir)
         if (ws_dir / "test_case_generation" / "test_cases.json").is_file():
             status = "completed"
         elif (ws_dir / "output" / "reports" / "validation.json").is_file():
