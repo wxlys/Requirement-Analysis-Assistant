@@ -95,6 +95,7 @@ def backfill_jobs() -> None:
         if job_id in jobs:
             continue
         docs = list(ws_dir.glob("需求文档-*"))
+        original_name = docs[0].name if docs else ""
         if (ws_dir / "test_case_generation" / "test_cases.json").is_file():
             status = "completed"
         elif (ws_dir / "output" / "reports" / "validation.json").is_file():
@@ -107,7 +108,8 @@ def backfill_jobs() -> None:
             now = datetime.now().isoformat(timespec="seconds")
         jobs[job_id] = {
             "id": job_id,
-            "filename": docs[0].name if docs else "",
+            "filename": original_name,
+            "original_name": original_name,
             "status": status,
             "message": "历史任务（服务升级前创建）",
             "created_at": now,
@@ -200,6 +202,7 @@ def create_job():
 
     ensure_workspaces()
     job_id = uuid.uuid4().hex[:12]
+    original_name = Path(uploaded.filename).name
     filename = f"需求文档-{job_id}{suffix}"
     workspace = WORKSPACES_DIR / job_id
     workspace.mkdir(parents=True, exist_ok=True)
@@ -209,6 +212,7 @@ def create_job():
         jobs[job_id] = {
             "id": job_id,
             "filename": filename,
+            "original_name": original_name,
             "status": "queued",
             "message": "任务已提交",
             "created_at": now,
@@ -259,6 +263,7 @@ def public_job(job_id: str) -> dict:
     with jobs_lock:
         job = dict(jobs[job_id])
     job.pop("filename", None)
+    job.setdefault("original_name", "")
     return job
 
 
