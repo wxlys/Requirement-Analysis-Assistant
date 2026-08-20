@@ -3,6 +3,39 @@
 .dropzone.dragging{border-color:var(--orange);background:#fdf1ea;outline:2px dashed var(--orange);outline-offset:-6px}
 .dropzone.dragging .upload-icon{background:var(--orange);color:#fff}
 
+/* 登录卡片 */
+.login-shell{position:relative;min-height:100vh;padding-top:42px}
+.login-shell::before,.login-shell::after{content:'';position:absolute;z-index:-1;border-radius:50%;pointer-events:none}
+.login-shell::before{width:180px;height:180px;left:-130px;top:250px;background:#f5c7ab80;filter:blur(8px)}
+.login-shell::after{width:110px;height:110px;right:-60px;bottom:100px;background:#d9e5dc99;filter:blur(6px)}
+.login-panel{position:relative;overflow:hidden;margin:55px auto 0;padding:38px 40px 27px;background:rgba(255,255,255,.82);box-shadow:0 24px 70px rgba(55,46,35,.12),0 3px 10px rgba(55,46,35,.04)}
+.login-panel::before{content:'';position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--orange),#f2ad75 55%,#b9d4c1)}
+.login-intro{display:flex;align-items:center;gap:16px}
+.login-icon{display:grid;place-items:center;position:relative;width:52px;height:52px;flex:0 0 52px;border-radius:16px;background:linear-gradient(145deg,#17212b,#3c4a53);box-shadow:0 9px 18px #17212b2b}
+.login-icon::before{content:'';width:20px;height:15px;border:2px solid #fff;border-radius:4px 4px 7px 7px;transform:translateY(5px)}
+.login-icon span{position:absolute;top:14px;width:7px;height:7px;border:2px solid #fff;border-radius:50%}
+.login-icon span:first-child{left:17px}.login-icon span:last-child{right:17px}
+.login-kicker{color:var(--orange);font-size:10px;font-weight:800;letter-spacing:.14em}
+.login-intro h2{margin:5px 0 3px;font-size:25px;letter-spacing:-.06em}
+.login-intro p{margin:0;color:var(--muted);font-size:12px}
+.login-form{margin-top:32px;gap:18px}
+.login-form label{gap:8px;color:#53616a;font-size:12px;font-weight:700}
+.field-label{padding-left:2px}
+.input-wrap{display:flex;align-items:center;border:1px solid #d6d8d2;border-radius:12px;background:#fbfaf8;transition:border-color .2s,box-shadow .2s,background .2s}
+.input-wrap:focus-within{border-color:var(--orange);background:#fff;box-shadow:0 0 0 4px #e6673c1c}
+.field-icon{display:grid;place-items:center;width:42px;color:#a0a8a7;font-size:16px;font-weight:700}
+.password-mark{font-size:18px}
+.login-form input{width:100%;padding:13px 14px 13px 0;border:0;background:transparent;font-size:14px;color:var(--ink)}
+.login-form input::placeholder{color:#a9afad}
+.login-form input:focus{outline:0}
+.login-shell .login-submit{height:52px;margin-top:4px;border-radius:12px;font-size:14px;box-shadow:0 10px 20px #e6673c30;transition:transform .2s,box-shadow .2s,background .2s}
+.login-shell .login-submit:hover{background:#d95730;box-shadow:0 13px 25px #e6673c42;transform:translateY(-2px)}
+.login-shell .login-submit:active{transform:translateY(0)}
+.login-note{display:flex;align-items:center;justify-content:center;gap:7px;margin:22px 0 0;color:#98a29f;font-size:11px}
+.login-note span{color:#52a478;font-size:8px}
+.login-shell .form-error{border:1px solid #f2c9c2}
+@media(max-width:620px){.login-shell{padding-top:24px}.login-panel{margin-top:37px;padding:31px 23px 24px}.login-intro h2{font-size:23px}.login-note{font-size:10px}}
+
 /* 进度阶段高亮 */
 .stages span{position:relative;padding:2px 0;transition:color .3s}
 .stages span.active{color:var(--orange);font-weight:700}
