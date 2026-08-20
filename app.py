@@ -6,6 +6,7 @@ import json
 import os
 import secrets
 import threading
+import time
 import uuid
 from datetime import datetime
 from functools import wraps
@@ -34,6 +35,12 @@ DEFAULT_PASSWORD = "admin123"
 app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
+STATIC_VERSION = str(int(time.time()))
+
+
+@app.context_processor
+def inject_static_version():
+    return {"static_version": STATIC_VERSION}
 
 
 def ensure_auth() -> None:

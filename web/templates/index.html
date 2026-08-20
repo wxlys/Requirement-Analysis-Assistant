@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>需求分析助手</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='extra.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ static_version }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='extra.css') }}?v={{ static_version }}">
 </head>
 <body>
   <main class="shell">
@@ -30,6 +30,6 @@
       <p id="account-msg" class="account-msg"></p>
     </div>
   </div>
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script src="{{ url_for('static', filename='app.js') }}?v={{ static_version }}"></script>
 </body>
 </html>
