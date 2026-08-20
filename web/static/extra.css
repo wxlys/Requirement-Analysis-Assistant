@@ -4,7 +4,17 @@
 .dropzone.dragging .upload-icon{background:var(--orange);color:#fff}
 
 /* 登录卡片 */
- .login-panel{position:relative;isolation:isolate;overflow:hidden;margin:55px auto 0;padding:38px 40px 27px;background:transparent;box-shadow:0 24px 70px rgba(55,46,35,.12),0 3px 10px rgba(55,46,35,.04);animation:login-card-in .7s cubic-bezier(.22,1,.36,1) both}
+ .login-shell{width:min(1180px,calc(100% - 56px));max-width:none;padding-top:34px}
+ .login-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr);gap:clamp(34px,6vw,86px);align-items:center;min-height:calc(100vh - 145px)}
+ .login-visual{position:relative;min-height:480px;overflow:hidden;border-radius:26px;background:#29343a;box-shadow:0 24px 70px rgba(55,46,35,.14);animation:login-card-in .7s cubic-bezier(.22,1,.36,1) both}
+ .login-visual::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(23,33,43,.8),rgba(23,33,43,.08) 68%,rgba(230,103,60,.24));pointer-events:none}
+ .login-visual img{display:block;width:100%;height:100%;min-height:480px;object-fit:cover;filter:saturate(.8) contrast(1.04);transform:scale(1.03);transition:transform 1.2s cubic-bezier(.22,1,.36,1),filter 1.2s ease}
+ .login-visual:hover img{transform:scale(1.08);filter:saturate(1) contrast(1.04)}
+ .visual-copy{position:absolute;z-index:1;left:clamp(28px,5vw,64px);right:28px;bottom:clamp(30px,5vw,64px);color:#fff}
+ .visual-kicker{font-size:10px;font-weight:800;letter-spacing:.18em;color:#ffd2ba}
+ .visual-copy h2{margin:12px 0 14px;font-size:clamp(30px,4vw,52px);line-height:1.08;letter-spacing:-.07em}
+ .visual-copy p{max-width:330px;margin:0;color:#f0e9e4d9;font-size:13px;line-height:1.8}
+ .login-panel{position:relative;isolation:isolate;overflow:hidden;width:100%;margin:0;padding:38px 40px 27px;background:transparent;box-shadow:0 24px 70px rgba(55,46,35,.12),0 3px 10px rgba(55,46,35,.04);animation:login-card-in .7s .12s cubic-bezier(.22,1,.36,1) both}
  .login-panel::before{content:'';position:absolute;inset:0;z-index:0;border-radius:inherit;background:conic-gradient(from 0deg,#e6673c,#f4bf83,#b9d4c1,#e6673c);animation:login-border-flow 8s linear infinite}
  .login-panel::after{content:'';position:absolute;z-index:1;inset:2px;border-radius:18px;background:rgba(255,255,255,.95)}
  .login-panel > *{position:relative;z-index:2}
@@ -27,7 +37,8 @@
 .login-note{display:flex;align-items:center;justify-content:center;gap:7px;margin:22px 0 0;color:#98a29f;font-size:11px}
 .login-note span{color:#52a478;font-size:8px}
 .login-shell .form-error{border:1px solid #f2c9c2}
- @media(max-width:620px){.login-panel{margin-top:37px;padding:31px 23px 24px}.login-intro h2{font-size:23px}.login-note{font-size:10px}}
+ @media(max-width:760px){.login-shell{width:calc(100% - 28px)}.login-layout{grid-template-columns:1fr;gap:24px;min-height:0;padding:36px 0 50px}.login-visual{min-height:280px}.login-visual img{min-height:280px}.visual-copy{left:28px;bottom:28px}.visual-copy h2{font-size:34px}.login-panel{margin:0}}
+ @media(max-width:620px){.login-panel{padding:31px 23px 24px}.login-intro h2{font-size:23px}.login-note{font-size:10px}}
  @keyframes login-card-in{from{opacity:0;transform:translateY(18px) scale(.98);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
  @keyframes login-fields-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
  @keyframes login-border-flow{to{transform:rotate(360deg)}}
