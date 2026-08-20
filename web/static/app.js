@@ -16,6 +16,31 @@ function guard(response) {
 }
 
 input.addEventListener('change', () => { name.textContent = input.files[0]?.name || '选择或拖入需求文档'; });
+
+const dropzone = document.querySelector('#dropzone');
+function setFile(file) {
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  name.textContent = file.name;
+}
+['dragenter', 'dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropzone.classList.add('dragging');
+}));
+['dragleave', 'dragend'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropzone.classList.remove('dragging');
+}));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropzone.classList.remove('dragging');
+  const file = e.dataTransfer?.files?.[0];
+  if (file) setFile(file);
+});
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const response = await fetch('/api/jobs', { method: 'POST', body: new FormData(form) });
