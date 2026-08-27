@@ -16,6 +16,31 @@ function guard(response) {
 }
 
 input.addEventListener('change', () => { name.textContent = input.files[0]?.name || '选择或拖入需求文档'; });
+
+const dropzone = document.querySelector('#dropzone');
+function setFile(file) {
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  name.textContent = file.name;
+}
+['dragenter', 'dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropzone.classList.add('dragging');
+}));
+['dragleave', 'dragend'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropzone.classList.remove('dragging');
+}));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropzone.classList.remove('dragging');
+  const file = e.dataTransfer?.files?.[0];
+  if (file) setFile(file);
+});
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const response = await fetch('/api/jobs', { method: 'POST', body: new FormData(form) });
@@ -88,15 +113,35 @@ accountForm?.addEventListener('submit', async (event) => {
 });
 
 const statusText = {queued:'排队中',analyzing:'分析中',generating:'生成用例中',completed:'已完成',human_required:'需人工介入',failed:'失败'};
+const PAGE_SIZE = 5;
+let historyPage = 1;
+let historyFilterDays = 0;
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function filterJobs(jobs) {
+  if (!historyFilterDays) return jobs;
+  const cutoff = Date.now() - historyFilterDays * 86400000;
+  return jobs.filter(j => {
+    const t = new Date(j.updated_at || j.created_at || 0).getTime();
+    return t >= cutoff;
+  });
+}
 
 async function loadHistory() {
   const response = await fetch('/api/jobs');
   if (guard(response)) return;
   const data = await response.json();
+  const all = filterJobs(data.jobs || []);
+  const pages = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+  if (historyPage > pages) historyPage = pages;
+  const pageJobs = all.slice((historyPage - 1) * PAGE_SIZE, historyPage * PAGE_SIZE);
   const list = document.querySelector('#history-list');
-  const jobs = data.jobs || [];
-  if (!jobs.length) { list.innerHTML = '<p class="history-empty">暂无历史任务</p>'; return; }
-  list.innerHTML = jobs.map(job => {
+  const pager = document.querySelector('#history-pager');
+  if (!all.length) { list.innerHTML = '<p class="history-empty">暂无历史任务</p>'; pager.innerHTML = ''; return; }
+  list.innerHTML = pageJobs.map(job => {
     const ok = job.status === 'completed';
     const downloads = ok ? [
       `<a class="dl-link" href="/api/jobs/${job.id}/download/analysis">需求分析结果.md</a>`,
@@ -104,12 +149,46 @@ async function loadHistory() {
       `<a class="dl-link" href="/api/jobs/${job.id}/download/test-cases-md">test_cases.md</a>`,
       `<a class="dl-link" href="/api/jobs/${job.id}/download/test-cases">test_cases.json</a>`,
     ].join('') : '<span class="dl-none">无产物</span>';
+    const docName = job.original_name || job.id;
     return `<div class="history-row ${job.status}">
-      <div class="history-main"><span class="history-id">${job.id}</span><span class="history-status ${job.status}">${statusText[job.status] || job.status}</span><span class="history-time">${job.updated_at || ''}</span><span class="history-msg">${job.message || ''}</span></div>
+      <div class="history-main"><span class="history-doc" title="${esc(docName)}">${esc(docName)}</span><span class="history-status ${job.status}">${statusText[job.status] || job.status}</span><span class="history-time">${job.updated_at || ''}</span></div>
       <div class="history-downloads">${downloads}</div>
     </div>`;
   }).join('');
+  pager.innerHTML = pages > 1 ? `
+    <button class="pager-btn" data-dir="-1" ${historyPage <= 1 ? 'disabled' : ''}>上一页</button>
+    <span class="pager-info">${historyPage} / ${pages}</span>
+    <button class="pager-btn" data-dir="1" ${historyPage >= pages ? 'disabled' : ''}>下一页</button>` : '';
+  list.querySelectorAll('.history-doc').forEach(el => {
+    el.addEventListener('wheel', (e) => {
+      if (e.deltaY) { e.preventDefault(); el.scrollLeft += e.deltaY; }
+    }, { passive: false });
+  });
 }
 
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.pager-btn');
+  if (btn) { historyPage += Number(btn.dataset.dir); loadHistory(); }
+});
+
+document.querySelector('#history-filter').addEventListener('change', (e) => {
+  historyFilterDays = Number(e.target.value);
+  historyPage = 1;
+  loadHistory();
+});
+
 document.querySelector('#refresh-history').addEventListener('click', loadHistory);
+
+async function resumeLatestJob() {
+  const response = await fetch('/api/jobs');
+  if (guard(response)) return;
+  const data = await response.json();
+  const latest = (data.jobs || [])[0];
+  if (!latest) return;
+  panel.classList.remove('hidden');
+  render(latest);
+  if (!['completed', 'human_required', 'failed'].includes(latest.status)) poll(latest.id);
+}
+
 loadHistory();
+resumeLatestJob();
