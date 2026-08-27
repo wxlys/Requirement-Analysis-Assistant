@@ -17,6 +17,7 @@ from flask import Flask, jsonify, redirect, render_template, request, send_file,
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from test_case_generation.render_test_cases import render as render_test_cases
+from prompt_manager import render_prompt
 
 
 ROOT = Path(__file__).resolve().parent
@@ -281,7 +282,7 @@ def run_job(job_id: str) -> None:
         session = opencode("POST", "/session", {"title": f"需求分析任务 {job_id}"})
         session_id = session["id"]
         filename = jobs[job_id]["filename"]
-        send_message(session_id, f"/analyze-requirement {filename} {workspace}")
+        send_message(session_id, render_requirement_prompt(workspace, filename))
         report = read_json(workspace / "output" / "reports" / "validation.json")
         if not report.get("passed"):
             update_job(job_id, status="human_required", message="需求分析未通过，需要人工修复 analysis.json")
@@ -334,6 +335,19 @@ def opencode(method: str, path: str, body: dict | None = None) -> dict:
 
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+def render_requirement_prompt(workspace: Path, filename: str) -> str:
+    doc_path = workspace / filename
+    doc_content = doc_path.read_text(encoding="utf-8") if doc_path.is_file() else ""
+    return render_prompt(
+        "requirement_analysis",
+        {
+            "workspace": str(workspace),
+            "requirement_filename": filename,
+            "requirement_document": doc_content,
+        },
+    )
 
 
 def render_test_case_markdown(workspace: Path) -> None:
