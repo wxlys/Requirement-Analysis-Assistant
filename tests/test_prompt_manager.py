@@ -34,6 +34,26 @@ class TestPromptTemplate(unittest.TestCase):
         with self.assertRaises(PromptTemplateError):
             render_prompt("not_exist_business", {})
 
+    def test_versioned_template_renders(self):
+        doc = "# 用户登录需求\n1. 输入账号密码登录。\n"
+        out = render_prompt(
+            "requirement_analysis",
+            {
+                "workspace": "/data/workspaces/job9",
+                "requirement_filename": "需求文档-job9.md",
+                "requirement_document": doc,
+            },
+            version="v1.1",
+        )
+        self.assertIn(doc, out)
+        self.assertIn("严禁编号塌缩", out)
+        self.assertIn("type 与 status 的区别", out)
+        self.assertNotIn("{{", out)
+
+    def test_unknown_version_raises(self):
+        with self.assertRaises(PromptTemplateError):
+            render_prompt("requirement_analysis", {"requirement_document": "x"}, version="v9.9")
+
 
 if __name__ == "__main__":
     unittest.main()

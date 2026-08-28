@@ -37,5 +37,11 @@ def render(template: str, variables: dict) -> str:
     return _PLACEHOLDER.sub(_replace, template)
 
 
-def render_prompt(business: str, variables: dict) -> str:
-    return render(load_template(business), variables)
+def render_prompt(business: str, variables: dict, version: str | None = None) -> str:
+    """渲染指定业务的提示词模板。
+
+    version 为 None 时使用默认模板（{business}.md）；
+    指定版本时使用 {business}_{version}.md（如 version="v1.1" → requirement_analysis_v1.1.md）。
+    """
+    name = f"{business}_{version}" if version else business
+    return render(load_template(name), variables)
