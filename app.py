@@ -321,7 +321,7 @@ def run_job(job_id: str) -> None:
         session = opencode("POST", "/session", {"title": f"需求分析任务 {job_id}"})
         session_id = session["id"]
         filename = jobs[job_id]["filename"]
-        send_message(session_id, render_requirement_prompt(workspace, filename))
+        send_requirement_message(session_id, workspace, filename)
         report = read_json(workspace / "output" / "reports" / "validation.json")
         if not report.get("passed"):
             update_job(job_id, status="human_required", message="需求分析未通过，需要人工修复 analysis.json")
@@ -342,6 +342,35 @@ def run_job(job_id: str) -> None:
 
 def send_message(session_id: str, text: str) -> dict:
     return opencode("POST", f"/session/{session_id}/message", {"parts": [{"type": "text", "text": text}]})
+
+
+def _mime_for(suffix: str) -> str:
+    return {
+        ".md": "text/markdown",
+        ".txt": "text/plain",
+        ".pdf": "application/pdf",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }.get(suffix.lower(), "application/octet-stream")
+
+
+def send_requirement_message(session_id: str, workspace: Path, filename: str) -> dict:
+    """规则放 Prompt、需求文档走附件：消息包含渲染后的规则文本 + 文档文件附件。
+
+    附件 URL 必须使用项目根目录内的路径（workspaces 软链接指向 DATA_DIR/workspaces），
+    opencode 服务器对项目目录外的文件附件会崩溃（ServeError）。
+    """
+    parts: list[dict] = [{"type": "text", "text": render_requirement_prompt(workspace, filename)}]
+    doc_path = workspace / filename
+    if doc_path.is_file():
+        parts.append(
+            {
+                "type": "file",
+                "mime": _mime_for(doc_path.suffix),
+                "filename": filename,
+                "url": "file://" + str(doc_path),
+            }
+        )
+    return opencode("POST", f"/session/{session_id}/message", {"parts": parts})
 
 
 def opencode_auth_key() -> str | None:
@@ -377,15 +406,13 @@ def read_json(path: Path) -> dict:
 
 
 def render_requirement_prompt(workspace: Path, filename: str) -> str:
-    doc_path = workspace / filename
-    doc_content = doc_path.read_text(encoding="utf-8") if doc_path.is_file() else ""
     return render_prompt(
         "requirement_analysis",
         {
             "workspace": str(workspace),
             "requirement_filename": filename,
-            "requirement_document": doc_content,
         },
+        version="v1.2",
     )
 
 
